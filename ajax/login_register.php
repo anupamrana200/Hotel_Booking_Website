@@ -6,21 +6,20 @@ require("../inc/sendgrid/sendgrid-php.php");
 
 date_default_timezone_set("Asia/Kolkata");
 
-function send_mail($uemail,$token,$type)
+function send_mail($uemail, $token, $type)
 {
-    if($type == "email_confirmation"){
+    if ($type == "email_confirmation") {
         $page = 'email_confirm.php';
         $subject = "Account Verification Link";
         $content = "confirm your email";
-    }
-    else{
+    } else {
         $page = 'index.php';
         $subject = "Account Reset Link";
         $content = "reset your account";
     }
 
     $email = new \SendGrid\Mail\Mail();
-    $email->setFrom(SENDGRID_EMAIL,SENDGRID_NAME);
+    $email->setFrom(SENDGRID_EMAIL, SENDGRID_NAME);
     $email->setSubject($subject);
 
     $email->addTo($uemail);
@@ -36,11 +35,10 @@ function send_mail($uemail,$token,$type)
     );
     $sendgrid = new \SendGrid(SENDGRID_API_KEY);
 
-    try{
+    try {
         $sendgrid->send($email);
         return 1;
-    }
-    catch(Exception $e){
+    } catch (Exception $e) {
         return 0;
     }
 }
@@ -81,22 +79,21 @@ if (isset($_POST['register'])) {
 
     $token = bin2hex(random_bytes(16));
 
-    if(!send_mail($data['email'], $token,"email_confirmation")){
+    if (!send_mail($data['email'], $token, "email_confirmation")) {
         echo 'mail_failed';
         exit;
     }
 
-    $enc_pass = password_hash($data['pass'],PASSWORD_BCRYPT);
+    $enc_pass = password_hash($data['pass'], PASSWORD_BCRYPT);
 
     $query = "INSERT INTO `user_cred`(`name`, `email`, `address`, `phonenum`, `pincode`, `dob`,
      `profile`, `password`, `token`) VALUES (?,?,?,?,?,?,?,?,?)";
 
-    $values = [$data['name'],$data['email'],$data['address'],$data['phonenum'],$data['pincode'],$data['dob'],$img,$enc_pass,$token];
+    $values = [$data['name'], $data['email'], $data['address'], $data['phonenum'], $data['pincode'], $data['dob'], $img, $enc_pass, $token];
 
-    if(insert($query,$values,'sssssssss')){
+    if (insert($query, $values, 'sssssssss')) {
         echo 1;
-    }
-    else{
+    } else {
         echo 'ins_failed';
     }
 }
@@ -108,20 +105,16 @@ if (isset($_POST['login'])) {
 
     if (mysqli_num_rows($u_exist) == 0) {
         echo 'inv_email_mob';
-    }
-    else{
+    } else {
         $u_fetch = mysqli_fetch_assoc($u_exist);
-        if($u_fetch['is_verified']==0){
+        if ($u_fetch['is_verified'] == 0) {
             echo 'not_verified';
-        }
-        else if($u_fetch['status']==0){
+        } else if ($u_fetch['status'] == 0) {
             echo 'inactive';
-        }
-        else{
-            if(!password_verify($data['pass'],$u_fetch['password'])){
+        } else {
+            if (!password_verify($data['pass'], $u_fetch['password'])) {
                 echo 'invalid_pass';
-            }
-            else{
+            } else {
                 session_start();
                 $_SESSION['login'] = true;
                 $_SESSION['uId'] = $u_fetch['id'];
@@ -132,7 +125,6 @@ if (isset($_POST['login'])) {
             }
         }
     }
-    
 }
 
 if (isset($_POST['forgot_pass'])) {
@@ -142,54 +134,45 @@ if (isset($_POST['forgot_pass'])) {
 
     if (mysqli_num_rows($u_exist) == 0) {
         echo 'inv_email';
-    }
-    else{
+    } else {
         $u_fetch = mysqli_fetch_assoc($u_exist);
-        if($u_fetch['is_verified']==0){
+        if ($u_fetch['is_verified'] == 0) {
             echo 'not_verified';
-        }
-        else if($u_fetch['status']==0){
+        } else if ($u_fetch['status'] == 0) {
             echo 'inactive';
-        }
-        else{
+        } else {
             //send reset link to email
             $token = bin2hex(random_bytes(16));
-            if(!send_mail($data['email'],$token,'account_recovery')){
+            if (!send_mail($data['email'], $token, 'account_recovery')) {
                 echo 'mail_failed';
-            }
-            else{
+            } else {
                 $date = date("Y-m-d");
 
-                $query = mysqli_query($con,"UPDATE `user_cred` SET `token`='$token',`t_expire`='$date' WHERE `id`='$u_fetch[id]'");
+                $query = mysqli_query($con, "UPDATE `user_cred` SET `token`='$token',`t_expire`='$date' WHERE `id`='$u_fetch[id]'");
 
-                if($query){
+                if ($query) {
                     echo 1;
-                }
-                else{
+                } else {
                     echo 'upd_failed';
                 }
             }
         }
     }
-
 }
 
 if (isset($_POST['recover_user'])) {
     $data = filteration($_POST);
 
-    $enc_pass = password_hash($data['pass'],PASSWORD_BCRYPT);
+    $enc_pass = password_hash($data['pass'], PASSWORD_BCRYPT);
 
     $query = "UPDATE `user_cred` SET `password`=?, `token`=?, `t_expire`=?
     WHERE `email`=? AND `token`=?";
 
-    $values = [$enc_pass,null,null,$data['email'],$data['token']];
+    $values = [$enc_pass, null, null, $data['email'], $data['token']];
 
-    if(update($query,$values,'sssss')){
+    if (update($query, $values, 'sssss')) {
         echo 1;
-    }
-    else{
+    } else {
         echo 'failed';
     }
-
 }
-?>
